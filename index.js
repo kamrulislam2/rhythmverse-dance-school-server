@@ -30,6 +30,38 @@ async function run() {
     await client.connect();
 
     const classesCollection = client.db("rhythmVerseDB").collection("classes");
+    const usersCollection = client.db("rhythmVerseDB").collection("users");
+
+    //  Class or instructors api
+    app.get("/popular-classes", async (req, res) => {
+      const limit = parseInt(req.query.limit) || 0;
+      const result = await classesCollection
+        .find()
+        .sort({ students: -1 })
+        .limit(limit)
+        .toArray();
+      res.send(result);
+    });
+
+    // Add users
+    app.put("/users", async (req, res) => {
+      const user = req.body;
+      const filter = { email: user.email };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          name: user.name,
+          email: user.email,
+        },
+      };
+
+      const result = await usersCollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
