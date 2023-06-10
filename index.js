@@ -4,6 +4,7 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
+const stripe = require("stripe")(process.env.PAYMENT_SECRET_KEY);
 const morgan = require("morgan");
 const port = process.env.PORT || 5000;
 
@@ -55,6 +56,9 @@ async function run() {
     const selectedCollection = client
       .db("rhythmVerseDB")
       .collection("selected");
+    const paymentsCollection = client
+      .db("rhythmVerseDB")
+      .collection("payments");
 
     // JWT Token
 
@@ -107,6 +111,13 @@ async function run() {
     // Student selected data
     app.get("/selected", verifyJWT, async (req, res) => {
       const result = await selectedCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.get("/selected/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const result = await selectedCollection.findOne(filter);
       res.send(result);
     });
 
@@ -164,6 +175,34 @@ async function run() {
 
       const result = { admin: user?.role === "admin" };
       res.send(result);
+    });
+
+    // Create Payment intent
+    app.post("/create-payment-intent", verifyJWT, async (req, res) => {
+      const { price } = req.body;
+
+      const amount = parseInt(price * 100);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "USD",
+        payment_method_types: ["card"],
+      });
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+
+    // Payment API
+    app.post("/payments", verifyJWT, async (req, res) => {
+      const payment = req.body;
+      const insertResult = await paymentsCollection.insertOne(payment);
+
+      const query = {
+        // _id: { $in: payment.cartItems.map((id) => new ObjectId(id)) },
+        _id: new ObjectId(payment.selectedClassId),
+      };
+      const deleteResult = await selectedCollection.deleteMany(query);
+      res.send({ insertResult, deleteResult });
     });
 
     // Send a ping to confirm a successful connection
