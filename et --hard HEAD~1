@@ -1,0 +1,41 @@
+[33mcommit 59ca2fc2aaad668e180223029c84393848507048[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: kamrulislam2 <kamrulislamABK@gmail.com>
+Date:   Sat Jun 10 12:36:41 2023 +0600
+
+    some changes made
+
+[33mcommit 933c336f625d463a5885b1acac2fbfe8b7bdaafd[m
+Author: kamrulislam2 <kamrulislamABK@gmail.com>
+Date:   Sat Jun 10 12:10:02 2023 +0600
+
+    admin verify route added
+
+[33mcommit 0543607d148efb9f6b8a3f8fb6d235f012a7ffc9[m
+Author: kamrulislam2 <kamrulislamABK@gmail.com>
+Date:   Sat Jun 10 11:56:00 2023 +0600
+
+    verifyJWT function created
+
+[33mcommit 93561fd8abe1dfd7fc3edc9104021085fb827937[m
+Author: kamrulislam2 <kamrulislamABK@gmail.com>
+Date:   Sat Jun 10 00:04:36 2023 +0600
+
+    jwt token created and send to client side to store
+
+[33mcommit 6ba33cd073a814f69571dda002ceb2e7ce262bbd[m
+Author: kamrulislam2 <kamrulislamABK@gmail.com>
+Date:   Fri Jun 9 23:13:33 2023 +0600
+
+    User added to database done
+
+[33mcommit 8feb21e1045634041f653eb053bc84f2aa554c73[m
+Author: kamrulislam2 <kamrulislamABK@gmail.com>
+Date:   Fri Jun 9 15:26:19 2023 +0600
+
+    Mongodb initial setup done
+
+[33mcommit f5403159d3031b2f8e12b7a889a2f408719dff51[m
+Author: kamrulislam2 <kamrulislamABK@gmail.com>
+Date:   Wed Jun 7 21:11:12 2023 +0600
+
+    Initial server setup done with first commit
