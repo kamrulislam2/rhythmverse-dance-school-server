@@ -2,7 +2,7 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const morgan = require("morgan");
 const port = process.env.PORT || 5000;
@@ -52,6 +52,9 @@ async function run() {
 
     const classesCollection = client.db("rhythmVerseDB").collection("classes");
     const usersCollection = client.db("rhythmVerseDB").collection("users");
+    const selectedCollection = client
+      .db("rhythmVerseDB")
+      .collection("selected");
 
     // JWT Token
 
@@ -93,12 +96,45 @@ async function run() {
           role: "student",
         },
       };
-
       const result = await usersCollection.updateOne(
         filter,
         updateDoc,
         options
       );
+      res.send(result);
+    });
+
+    // Student selected data
+    app.get("/selected", verifyJWT, async (req, res) => {
+      const result = await selectedCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.put("/selected", async (req, res) => {
+      const data = req.body;
+
+      console.log(data);
+      const filter = { name: data.name };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          ...data,
+        },
+      };
+      const result = await selectedCollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
+      res.send(result);
+    });
+
+    app.delete("/selected/:id", async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      const filter = { _id: new ObjectId(id) };
+
+      const result = await selectedCollection.deleteOne(filter);
       res.send(result);
     });
 
