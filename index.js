@@ -72,7 +72,7 @@ async function run() {
     });
 
     //  Class or instructors api
-    app.get("/popular-classes", async (req, res) => {
+    app.get("/classes", async (req, res) => {
       const limit = parseInt(req.query.limit) || 0;
       const result = await classesCollection
         .find()
@@ -80,6 +80,20 @@ async function run() {
         .limit(limit)
         .toArray();
       res.send(result);
+    });
+
+    app.patch("/classes/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const findClass = await classesCollection.findOne(filter);
+      console.log(findClass);
+      const updateDoc = {
+        $set: {
+          students: findClass.students + 1,
+        },
+      };
+      const updateResult = await classesCollection.updateOne(filter, updateDoc);
+      res.send(updateResult);
     });
 
     // Users API
@@ -110,7 +124,10 @@ async function run() {
 
     // Student selected data
     app.get("/selected", verifyJWT, async (req, res) => {
-      const result = await selectedCollection.find().toArray();
+      const email = req.query.email;
+      console.log(email);
+      const filter = { email: email };
+      const result = await selectedCollection.find(filter).toArray();
       res.send(result);
     });
 
@@ -121,22 +138,16 @@ async function run() {
       res.send(result);
     });
 
-    app.put("/selected", async (req, res) => {
+    app.post("/selected", async (req, res) => {
       const data = req.body;
 
       console.log(data);
-      const filter = { name: data.name };
-      const options = { upsert: true };
-      const updateDoc = {
-        $set: {
-          ...data,
-        },
-      };
-      const result = await selectedCollection.updateOne(
-        filter,
-        updateDoc,
-        options
-      );
+      const filter = { name: data.name, email: data.email };
+      const findData = await selectedCollection.findOne(filter);
+      if (findData) {
+        return res.send("Already Exists");
+      }
+      const result = await selectedCollection.insertOne(data);
       res.send(result);
     });
 
@@ -193,12 +204,21 @@ async function run() {
     });
 
     // Payment API
+    app.get("/payment", async (req, res) => {
+      const email = req.query.email;
+      const filter = { email: email };
+      const result = await paymentsCollection
+        .find(filter)
+        .sort({ date: -1 })
+        .toArray();
+      res.send(result);
+    });
+
     app.post("/payments", verifyJWT, async (req, res) => {
       const payment = req.body;
       const insertResult = await paymentsCollection.insertOne(payment);
 
       const query = {
-        // _id: { $in: payment.cartItems.map((id) => new ObjectId(id)) },
         _id: new ObjectId(payment.selectedClassId),
       };
       const deleteResult = await selectedCollection.deleteMany(query);
