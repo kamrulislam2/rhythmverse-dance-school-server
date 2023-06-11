@@ -73,12 +73,49 @@ async function run() {
 
     //  Class or instructors api
     app.get("/classes", async (req, res) => {
+      const query = { status: "Approved" };
       const limit = parseInt(req.query.limit) || 0;
       const result = await classesCollection
-        .find()
+        .find(query)
         .sort({ students: -1 })
         .limit(limit)
         .toArray();
+      res.send(result);
+    });
+
+    app.get("/myClasses", verifyJWT, async (req, res) => {
+      const email = req.query.email;
+      const filter = { "instructor.email": email };
+      const cursor = classesCollection.find(filter);
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    app.patch("/myClasses/:id", verifyJWT, async (req, res) => {
+      const updateData = req.body;
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          seats: updateData.seats,
+          price: updateData.price,
+        },
+      };
+      const result = await classesCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
+    app.delete("/myClasses/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const result = await classesCollection.deleteOne(filter);
+      res.send(result);
+    });
+
+    app.post("/classes", async (req, res) => {
+      const classData = req.body;
+
+      const result = await classesCollection.insertOne(classData);
       res.send(result);
     });
 
