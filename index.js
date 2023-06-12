@@ -49,7 +49,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const classesCollection = client.db("rhythmVerseDB").collection("classes");
     const usersCollection = client.db("rhythmVerseDB").collection("users");
@@ -74,27 +74,6 @@ async function run() {
       next();
     };
 
-    const verifyInstructor = async (req, res, next) => {
-      const email = req.decoded.email;
-
-      const query = { email: email };
-      const user = await usersCollection.findOne(query);
-      if (user?.role !== "instructor") {
-        res.status(403).send({ error: true, message: "Access Forbidden" });
-      }
-      next();
-    };
-
-    const verifyStudent = async (req, res, next) => {
-      const email = req.decoded.email;
-
-      const query = { email: email };
-      const user = await usersCollection.findOne(query);
-      if (user?.role !== "student") {
-        res.status(403).send({ error: true, message: "Access Forbidden" });
-      }
-      next();
-    };
     // JWT Token
 
     app.post("/jwt", (req, res) => {
@@ -118,7 +97,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/myClasses", verifyJWT, verifyInstructor, async (req, res) => {
+    app.get("/myClasses", verifyJWT, async (req, res) => {
       const email = req.query.email;
       const filter = { "instructor.email": email };
       const cursor = classesCollection.find(filter);
@@ -193,38 +172,28 @@ async function run() {
       res.send({ classesResult, classUpdatesResult });
     });
 
-    app.patch(
-      "/myClasses/:id",
-      verifyJWT,
-      verifyInstructor,
-      async (req, res) => {
-        const updateData = req.body;
-        const id = req.params.id;
-        const filter = { _id: new ObjectId(id) };
-        const updateDoc = {
-          $set: {
-            seats: updateData.seats,
-            price: updateData.price,
-          },
-        };
-        const result = await classesCollection.updateOne(filter, updateDoc);
-        res.send(result);
-      }
-    );
+    app.patch("/myClasses/:id", verifyJWT, async (req, res) => {
+      const updateData = req.body;
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          seats: updateData.seats,
+          price: updateData.price,
+        },
+      };
+      const result = await classesCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
 
-    app.delete(
-      "/myClasses/:id",
-      verifyJWT,
-      verifyInstructor,
-      async (req, res) => {
-        const id = req.params.id;
-        const filter = { _id: new ObjectId(id) };
-        const result = await classesCollection.deleteOne(filter);
-        res.send(result);
-      }
-    );
+    app.delete("/myClasses/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const result = await classesCollection.deleteOne(filter);
+      res.send(result);
+    });
 
-    app.post("/classes", verifyJWT, verifyInstructor, async (req, res) => {
+    app.post("/classes", async (req, res) => {
       const classData = req.body;
 
       const result = await classesCollection.insertOne(classData);
@@ -285,7 +254,7 @@ async function run() {
     });
 
     // Student selected data
-    app.get("/selected", verifyJWT, verifyStudent, async (req, res) => {
+    app.get("/selected", verifyJWT, async (req, res) => {
       const email = req.query.email;
       console.log(email);
       const filter = { email: email };
@@ -294,7 +263,7 @@ async function run() {
     });
 
     // This route is to load data in payment page to get price information
-    app.get("/selected/:id", verifyJWT, verifyStudent, async (req, res) => {
+    app.get("/selected/:id", verifyJWT, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const result = await selectedCollection.findOne(filter);
@@ -314,7 +283,7 @@ async function run() {
       res.send(result);
     });
 
-    app.delete("/selected/:id", verifyJWT, verifyStudent, async (req, res) => {
+    app.delete("/selected/:id", verifyJWT, async (req, res) => {
       const id = req.params.id;
       console.log(id);
       const filter = { _id: new ObjectId(id) };
@@ -352,27 +321,22 @@ async function run() {
     });
 
     // Create Payment intent
-    app.post(
-      "/create-payment-intent",
-      verifyJWT,
-      verifyStudent,
-      async (req, res) => {
-        const { price } = req.body;
+    app.post("/create-payment-intent", verifyJWT, async (req, res) => {
+      const { price } = req.body;
 
-        const amount = parseInt(price * 100);
-        const paymentIntent = await stripe.paymentIntents.create({
-          amount: amount,
-          currency: "USD",
-          payment_method_types: ["card"],
-        });
-        res.send({
-          clientSecret: paymentIntent.client_secret,
-        });
-      }
-    );
+      const amount = parseInt(price * 100);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "USD",
+        payment_method_types: ["card"],
+      });
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
 
     // Payment API
-    app.get("/payment", verifyJWT, verifyStudent, async (req, res) => {
+    app.get("/payment", verifyJWT, async (req, res) => {
       const email = req.query.email;
       const filter = { email: email };
       const result = await paymentsCollection
