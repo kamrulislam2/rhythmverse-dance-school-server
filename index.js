@@ -59,6 +59,9 @@ async function run() {
     const paymentsCollection = client
       .db("rhythmVerseDB")
       .collection("payments");
+    const classUpdatesCollection = client
+      .db("rhythmVerseDB")
+      .collection("classUpdates");
 
     // JWT Token
 
@@ -89,6 +92,63 @@ async function run() {
       const cursor = classesCollection.find(filter);
       const result = await cursor.toArray();
       res.send(result);
+    });
+
+    app.get("/manageClasses", async (req, res) => {
+      const query = { status: "Pending" };
+      const pendingClasses = await classesCollection
+        .find(query)
+        .sort({ students: -1 })
+        .toArray();
+      res.send(pendingClasses);
+    });
+
+    app.get("/updatedClasses", async (req, res) => {
+      const result = await classUpdatesCollection
+        .find()
+        .sort({ students: -1 })
+        .toArray();
+      res.send(result);
+    });
+
+    app.patch("/manageClasses/:id", async (req, res) => {
+      const { updateStatus, classUpdateData } = req.body;
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          status: updateStatus.status,
+        },
+      };
+      const updateResult = await classesCollection.updateOne(filter, updateDoc);
+
+      const addResult = await classUpdatesCollection.insertOne(classUpdateData);
+
+      res.send({ updateResult, addResult });
+    });
+
+    app.put("/updateFeedback/:id", async (req, res) => {
+      const updateFeedback = req.body;
+      const id = req.params.id;
+      const filterClasses = { _id: new ObjectId(id) };
+      const filterClassUpdates = { classId: id };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          feedback: updateFeedback.feedback,
+        },
+      };
+      const classesResult = await classesCollection.updateOne(
+        filterClasses,
+        updateDoc,
+        options
+      );
+      const classUpdatesResult = await classUpdatesCollection.updateOne(
+        filterClassUpdates,
+        updateDoc,
+        options
+      );
+      res.send({ classesResult, classUpdatesResult });
     });
 
     app.patch("/myClasses/:id", verifyJWT, async (req, res) => {
