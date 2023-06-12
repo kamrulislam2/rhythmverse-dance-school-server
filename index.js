@@ -194,8 +194,21 @@ async function run() {
     });
 
     // Users API
-    app.get("/users", async (req, res) => {
+    app.get("/users", verifyJWT, async (req, res) => {
       const result = await usersCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.patch("/user/:id", async (req, res) => {
+      const id = req.params.id;
+      const updateRole = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          role: updateRole.role,
+        },
+      };
+      const result = await usersCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
 
