@@ -285,7 +285,6 @@ async function run() {
 
     app.delete("/selected/:id", verifyJWT, async (req, res) => {
       const id = req.params.id;
-      console.log(id);
       const filter = { _id: new ObjectId(id) };
 
       const result = await selectedCollection.deleteOne(filter);
